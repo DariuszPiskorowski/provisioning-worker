@@ -6,7 +6,7 @@ configs:
   pg_hba:
     file: ./postgres_config/pg_hba.conf
   migrations_sql:
-    file: ./src/integrations/migrations.sql
+    file: ./src/integrations/postgres/migrations.sql
 
 networks:
   app_net:
