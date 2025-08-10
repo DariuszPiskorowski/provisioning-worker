@@ -1,127 +1,107 @@
-provisioning-worker
-Automatyczny provisioning nowego workera w Docker Swarm: uruchomienie aplikacji RFMM + PostgreSQL z jednorazową inicjalizacją bazy (migracje).
+📦 provisioning-worker
+Repozytorium zawiera pliki potrzebne do wdrożenia nowego workera produkcyjnego z własną instancją PostgreSQL oraz kontenerem aplikacji rfmm w środowisku Docker Swarm, zarządzanym przez Portainera.
 
-Struktura repo
-pgsql
-Copy
-Edit
-provisioning-worker/
-├─ worker-stack.yml
-├─ postgres_config/
-│  ├─ postgresql.conf
-│  └─ pg_hba.conf
-└─ src/
-   └─ integrations/
-      └─ migrations.sql
-worker-stack.yml – definicja stacka (Swarm) z usługami rfmm i postgres.
+📂 Zawartość repozytorium
+worker-stack.yml – plik definiujący stack (Postgres + aplikacja).
 
-postgres_config/*.conf – konfiguracja Postgresa.
+postgresql.conf – konfiguracja PostgreSQL.
 
-src/integrations/migrations.sql – jednorazowe migracje (wykonywane przy pustym volume).
+pg_hba.conf – ustawienia dostępu do PostgreSQL.
 
-Wymagania wstępne
-Swarm z co najmniej jednym managerem i dołączonym workerem.
+src/integrations/migrations.sql – migracje tworzące strukturę bazy.
 
-Portainer połączony z klastrem (opcjonalnie możesz robić deploy przez CLI).
+.env.example – przykład pliku .env z hasłem do bazy.
 
-Prywatny rejestr Dockera dostępny z workerów (np. 100.119.56.20:5000) oraz docker login skonfigurowany na workerach/środowisku Portainera.
+🚀 Jak użyć w Portainerze (Git stack)
+Przygotuj repozytorium
 
-Worker ma hostname zgodny z tym, który ustawisz w zmiennej WORKER_HOSTNAME.
+Upewnij się, że worker-stack.yml oraz pliki konfiguracyjne znajdują się w tym repozytorium.
 
-Zmienne
-W worker-stack.yml używamy zmiennych:
+W .env.example ustaw przykładowe hasło do bazy (DB_PASSWORD).
 
-RFMM_IMAGE – obraz apki, np.
-100.119.56.20:5000/rfmm:prod-2025-08-07-02-33
+Dodaj token do prywatnego repo na GitHubie
 
-WORKER_HOSTNAME – nazwa node’a, np. swarm-worker-1
+Wejdź w GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic).
 
-DB_PASSWORD – hasło użytkownika postgres dla lokalnej bazy.
+Utwórz nowy token z uprawnieniami repo → skopiuj.
 
-Możesz:
+W Portainerze dodasz go w polu Authentication w sekcji Git stack.
 
-zdefiniować je w Portainer → Stacks → Environment variables,
+Wejdź w Portainera
 
-albo dodać plik .env w repo (nie zalecamy trzymania haseł w repo; lepiej ustawić je w Portainerze).
+W menu wybierz Stacks.
 
-Przykładowy .env.example:
+Kliknij Add stack.
 
-ini
-Copy
-Edit
-RFMM_IMAGE=100.119.56.20:5000/rfmm:prod-2025-08-07-02-33
-WORKER_HOSTNAME=swarm-worker-1
-DB_PASSWORD=secure_password_2024
-Deploy przez Portainera (Git stack)
-Stacks → Add stack → Repository
+Nadaj nazwę np. new-worker-deploy.
 
-Repository URL: https://github.com/<org>/<repo>.git
+Wybierz zakładkę Repository.
 
-Reference: main
-
-Compose path: worker-stack.yml
-
-Environment variables: ustaw RFMM_IMAGE, WORKER_HOSTNAME, DB_PASSWORD
-
-(Opcj.) Auto update: Polling lub Webhook
-
-Wybierz Swarm, kliknij Deploy the stack.
-
-Portainer:
-
-sklonuje repo,
-
-utworzy Swarm Configs z plików konfiguracyjnych/migracji,
-
-wystartuje postgres (z pustym volumem) → wykona migrations.sql raz,
-
-wystartuje rfmm.
-
-Deploy przez CLI (alternatywa)
-Na managerze (repo sklonowane lokalnie):
+W polu Repository URL wpisz:
 
 bash
 Copy
 Edit
-export RFMM_IMAGE=100.119.56.20:5000/rfmm:prod-2025-08-07-02-33
-export WORKER_HOSTNAME=swarm-worker-1
-export DB_PASSWORD=secure_password_2024
+https://github.com/DariuszPiskorowski/provisioning-worker.git
+W polu Repository reference wpisz main (lub inną gałąź).
 
-docker stack deploy -c worker-stack.yml new-worker-deploy
-Dostęp do aplikacji
-http://<tailscale-ip-workera>:8080 (mapowanie 8080:3000)
+W polu Compose path wpisz:
 
-Typowe operacje
-Nowy worker:
+cpp
+Copy
+Edit
+worker-stack.yml
+W sekcji Authentication wprowadź swój GitHub username i token.
 
-Dołącz worker do Swarma (docker swarm join ...)
+Dodaj zmienną środowiskową
 
-Ustaw WORKER_HOSTNAME na jego hostname
+W sekcji Environment variables kliknij Add environment variable.
 
-Deploy przez Portainer/CLI (jak wyżej)
+Nazwa: DB_PASSWORD
+Wartość: secure_password_2024
+(Nie wpisujemy hasła w yml, Portainer wstrzyknie je automatycznie)
 
-Update apki:
+Upewnij się, że worker jest w Swarmie
 
-Zmień tag w RFMM_IMAGE (np. nowa wersja po CI)
+Na menedżerze:
 
-Redeploy stack (Portainer/CLI)
+bash
+Copy
+Edit
+docker node ls
+Worker musi być widoczny i aktywny.
 
-Update Postgresa:
+Deploy stacka
 
-Zmień image: postgres:15 → :16
+Kliknij Deploy the stack w Portainerze.
 
-Redeploy (dane zostają w pg_data)
+Portainer pobierze pliki z GitHuba, utworzy kontenery i połączy je w sieci.
 
-Ponowne uruchomienie migracji (tylko do testów!):
+📋 Checklista szybkiego wdrożenia nowego workera
+Worker podłączony do Swarma (docker swarm join ...).
 
-Usuń volume pg_data tego stacka → pierwsze podniesienie wykona migrations.sql ponownie
+Repozytorium provisioning-worker aktualne na GitHubie.
 
-Troubleshooting
-Apka nie łączy się z DB: sprawdź DATABASE_URL (host musi być postgres — nazwa serwisu).
+W Portainerze → Stacks → Add stack.
 
-Migracje się nie wykonały: volume nie był pusty; usuń volume i podnieś serwis bazy ponownie.
+Wybór trybu Repository z adresem repo.
 
-Brak plików configów: upewnij się, że configs.file wskazuje na istniejące ścieżki w repo.
+Dodanie zmiennej DB_PASSWORD.
 
-Stack nie startuje na właściwym hoście: sprawdź node.hostname i realny hostname noda (docker node ls).
+Deploy stacka.
 
+Sprawdzenie statusu:
+
+bash
+Copy
+Edit
+docker service ls
+docker ps
+📌 Ważne
+Migracje bazy są ładowane automatycznie przy pierwszym starcie kontenera PostgreSQL z pliku migrations.sql.
+
+Każdy worker ma własną instancję Postgresa i działa niezależnie.
+
+Aktualizacja aplikacji rfmm odbywa się osobno przez zmianę tagu obrazu w worker-stack.yml lub w głównym stacku produkcyjnym.
+
+Postgresa możesz aktualizować ręcznie przez zmianę tagu obrazu postgres: w tym samym stacku.
