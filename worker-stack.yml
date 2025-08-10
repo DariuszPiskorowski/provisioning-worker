@@ -1,0 +1,71 @@
+version: "3.8"
+
+configs:
+  pg_conf:
+    file: ./postgres_config/postgresql.conf
+  pg_hba:
+    file: ./postgres_config/pg_hba.conf
+  migrations_sql:
+    file: ./src/integrations/migrations.sql
+
+networks:
+  app_net:
+    driver: overlay
+
+volumes:
+  pg_data:
+    driver: local
+
+services:
+  rfmm:
+    image: 100.119.56.20:5000/rfmm:prod-2025-08-07-02-33
+    ports:
+      - "8080:3000"     # UI apki na porcie 8080 hosta (np. przez Tailscale)
+    environment:
+      - DATABASE_URL=postgresql://postgres:secure_password_2024@postgres:5432/medical_app
+    networks: [app_net]
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-worker-1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0
+        window: 120s
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=medical_app
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secure_password_2024
+    networks: [app_net]
+    configs:
+      - source: pg_conf
+        target: /etc/postgresql/postgresql.conf
+      - source: pg_hba
+        target: /etc/postgresql/pg_hba.conf
+      - source: migrations_sql
+        target: /docker-entrypoint-initdb.d/init.sql
+    command: ["postgres",
+              "-c","config_file=/etc/postgresql/postgresql.conf",
+              "-c","hba_file=/etc/postgresql/pg_hba.conf"]
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == swarm-worker-1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0
+        window: 120s
+    # Bez otwierania portu 5432 na świat. Jeśli chcesz admin zdalny po Tailscale:
+    # ports:
+    #   - "5432:5432"
