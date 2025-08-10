@@ -39,18 +39,20 @@ Wybierz zakładkę Repository.
 
 W polu Repository URL wpisz:
 
-bash
+```bash
 Copy
 Edit
 https://github.com/DariuszPiskorowski/provisioning-worker.git
+```
 W polu Repository reference wpisz main (lub inną gałąź).
 
 W polu Compose path wpisz:
 
-cpp
+```cpp
 Copy
 Edit
 worker-stack.yml
+```
 W sekcji Authentication wprowadź swój GitHub username i token.
 
 Dodaj zmienną środowiskową
@@ -65,10 +67,11 @@ Upewnij się, że worker jest w Swarmie
 
 Na menedżerze:
 
-bash
+```bash
 Copy
 Edit
 docker node ls
+```
 Worker musi być widoczny i aktywny.
 
 Deploy stacka
@@ -78,25 +81,27 @@ Kliknij Deploy the stack w Portainerze.
 Portainer pobierze pliki z GitHuba, utworzy kontenery i połączy je w sieci.
 
 📋 Checklista szybkiego wdrożenia nowego workera
-Worker podłączony do Swarma (docker swarm join ...).
+1. Worker podłączony do Swarma (docker swarm join ...).
 
-Repozytorium provisioning-worker aktualne na GitHubie.
+2. Repozytorium provisioning-worker aktualne na GitHubie.
 
-W Portainerze → Stacks → Add stack.
+3. W Portainerze → Stacks → Add stack.
 
-Wybór trybu Repository z adresem repo.
+4. Wybór trybu Repository z adresem repo.
 
-Dodanie zmiennej DB_PASSWORD.
+5. Dodanie zmiennej DB_PASSWORD.
 
-Deploy stacka.
+6. Deploy stacka.
 
-Sprawdzenie statusu:
+7. Sprawdzenie statusu:
 
-bash
+```bash
 Copy
 Edit
 docker service ls
 docker ps
+```
+
 📌 Ważne
 Migracje bazy są ładowane automatycznie przy pierwszym starcie kontenera PostgreSQL z pliku migrations.sql.
 
