@@ -18,7 +18,7 @@ volumes:
 
 services:
   rfmm:
-    image: ${RFMM_IMAGE:-100.119.56.20:5000/rfmm:prod-2025-08-07-02-33}
+    image: ${RFMM_IMAGE:-100.119.56.20:5000/rfmm:prod-2025-08-11-00-22}
     ports:
       - target: 3000
         published: 8080
